@@ -4,10 +4,14 @@ import com.alibaba.otter.canal.client.CanalConnector;
 import com.alibaba.otter.canal.client.CanalConnectors;
 import com.alibaba.otter.canal.protocol.CanalEntry;
 import com.alibaba.otter.canal.protocol.Message;
-import com.bupt.liu.util.avro.AisData;
+import com.bupt.liu.util.AisData;
+import com.bupt.liu.util.Data;
+import com.bupt.liu.util.OrcData;
+import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,6 +20,9 @@ import java.util.Map;
  * Created by lpeiz on 2017/9/2.
  */
 public class ClientToHdfs {
+    private static final Logger LOGGER = Logger.getLogger(ClientToHdfs.class);
+    static List<Data<OrcData>> results = new ArrayList<>();
+
     public static void main(String args[]) {
         // 创建链接
         CanalConnector connector = CanalConnectors.newSingleConnector(new InetSocketAddress("127.0.0.1",
@@ -134,7 +141,6 @@ public class ClientToHdfs {
                     }
                 }
 
-
                 else {
                     System.out.println("-------> before");
                     printColumn(rowData.getBeforeColumnsList());
@@ -144,9 +150,9 @@ public class ClientToHdfs {
 
                 avro.setDdl(null);
                 avro.setErr(null);
-                avro.setDb(entry.getHeader().getDatabaseName());
+                avro.setDb(entry.getHeader().getSchemaName());
                 avro.setOpt(entry.getHeader().getEventType().toString());
-                avro.setSch(entry.getHeader().getDatabaseName());
+                avro.setSch(entry.getHeader().getSchemaName());
                 avro.setTab(entry.getHeader().getTableName());
 //                avro.setMid(tableUid.get(hiveTables.get(avro.getDb() + "." + avro.getTab())).incrementAndGet());
 //                avro.setTs(fetchTime);
@@ -158,29 +164,19 @@ public class ClientToHdfs {
 //                cus.put(CUS_FT, String.valueOf(fetchTime));
                 //cus.put("HDFSTABLENAME",hiveTables.get(avro.getDb() + "." + avro.getTab()));
                 avro.setCus(cus);
-                Data<byte[]> rd = new Data<>();
-                rd.setTargetElementName("tp_target");
-                rd.putHeaders( "HDFSTABLENAME", (String) this.hiveTables.get(avro.getDb() + "." + avro.getTab()));
-                rd.putHeaders("UID", String.valueOf(curpos.getUId()));
-                cp.setRowData(binlog, pos, i);
-                cp.setEvent(binlog, pos);
-                rd.putHeaders("cp", generateCp());
-                OrcData od = addProcessedData(results, rd.getHeaders());
+                Data<byte[]> rd = new Data<byte[]>();
+     //           rd.setTargetElementName("tp_target");
+       //         rd.putHeaders( "HDFSTABLENAME", (String) this.hiveTables.get(avro.getDb() + "." + avro.getTab()));
+                //rd.putHeaders("UID", String.valueOf(curpos.getUId()));
+                //cp.setRowData(binlog, pos, i);
+               // cp.setEvent(binlog, pos);
+               // rd.putHeaders("cp", generateCp());
+                OrcData od = addProcessedData(ClientToHdfs.results, rd.getHeaders());
                 Map<String, String> merged = merge(src, cur);
-                addExtendsCols(avro, merged);
+                //addExtendsCols(avro, merged);
                 od.setDatas(merged);
 
-
-
-
-
-
-
-
-
-
-
-            }
+           }
         }
     }
 
@@ -189,4 +185,55 @@ public class ClientToHdfs {
             System.out.println(column.getName() + " : " + column.getValue() + "    update=" + column.getUpdated());
         }
     }
+    private static OrcData addProcessedData(List<Data<OrcData>> results,
+                                     Map<String, String> headers) {
+        Data<OrcData> dod = new Data<OrcData>();
+        OrcData od = new OrcData();
+        dod.setData(od);
+        results.add(dod);
+        for (Map.Entry<String, String> entry : headers.entrySet()) {
+            dod.putHeaders(entry.getKey(), entry.getValue());
+        }
+        return od;
+    }
+
+    private static Map<String, String> merge(Map<CharSequence, CharSequence> src,Map<CharSequence, CharSequence> cur) {
+        Map<String, String> merged = new HashMap<>();
+        Map.Entry<CharSequence, CharSequence> err = null;
+        try{
+            if (src != null) {
+                for (Map.Entry<CharSequence, CharSequence> entry : src.entrySet()) {
+                    err= entry;
+                    merged.put(entry.getKey().toString().trim().toLowerCase(),entry.getValue() == null ? null : entry.getValue().toString());
+                }
+            }
+
+            if (cur != null) {
+                for (Map.Entry<CharSequence, CharSequence> entry : cur.entrySet()) {
+                    err= entry;
+                    merged.put(entry.getKey().toString().trim().toLowerCase(),entry.getValue() == null ? null : entry.getValue().toString());
+                }
+            }
+        }catch(Exception e){
+            LOGGER.info("key : " + err.getKey());
+            LOGGER.info("value : " + err.getValue());
+            LOGGER.error(e.getMessage(),e);
+        }
+        return merged;
+    }
+
+/*    private void addExtendsCols(JdwData jdwData, Map<String, String> merged) {
+        // source_ip,source_table,jrdw_timstamp,source_db_ts(主库时间),binlog_opt,mid
+        //merged.put("start_date", sdf.format(new Date()));
+        merged.put("start_date", "");
+        merged.put("change_code", null);
+        merged.put("source_ip", jdwData.getCus().get(CUS_IP).toString());
+        merged.put("source_db", jdwData.getDb().toString());
+        merged.put("source_tb", jdwData.getTab().toString());
+        merged.put("jrdw_master_db_ts", String.valueOf(jdwData.getTs()));
+        merged.put("jrdw_consumer_ts", String.valueOf(System.currentTimeMillis()));
+        merged.put("jrdw_mid", String.valueOf(jdwData.getMid()));
+        merged.put("jrdw_dml_type", jdwData.getOpt().toString());
+
+    }*/
 }
