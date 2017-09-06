@@ -1,4 +1,4 @@
-package com.bupt.liu.avro;
+package com.bupt.liu.util;
 
 /**
  * Created by lpeiz on 2017/9/2.

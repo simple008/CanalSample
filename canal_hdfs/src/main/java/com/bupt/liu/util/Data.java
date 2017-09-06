@@ -1,4 +1,4 @@
-package com.bupt.liu.avro;
+package com.bupt.liu.util;
 
 import org.apache.commons.lang.StringUtils;
 
@@ -8,8 +8,8 @@ import java.util.Map;
 /**
  * Created by lpeiz on 2017/9/2.
  */
-public class Data {
-    private OrcData data;
+public class Data<T> {
+    private T data;
     private Map<String, String> headers = new HashMap();
     private String targetElement;
 
@@ -51,11 +51,11 @@ public class Data {
         this.headers.put(key, prev);
     }
 
-    public OrcData getData() {
+    public T getData() {
         return this.data;
     }
 
-    public void setData(OrcData data) {
+    public void setData(T data) {
         this.data = data;
     }
 }

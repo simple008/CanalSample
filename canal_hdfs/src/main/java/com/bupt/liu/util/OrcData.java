@@ -1,4 +1,4 @@
-package com.bupt.liu.avro;
+package com.bupt.liu.util;
 
 import java.util.HashMap;
 import java.util.Map;
