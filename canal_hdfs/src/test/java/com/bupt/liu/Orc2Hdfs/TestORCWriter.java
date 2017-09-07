@@ -54,6 +54,11 @@ public class TestORCWriter {
         writer.addRowBatch(batch);
         writer.close();
 
+        Path path = new Path("hdfsfile");
+        FileSystem fileSystem = path.getFileSystem(conf);
+        fileSystem.copyFromLocalFile(new Path(lxw_orc1_file), path);
+
     }
+
 
 }

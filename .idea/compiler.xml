@@ -10,8 +10,8 @@
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
-      <module name="canal_hdfs" target="1.6" />
-      <module name="canaldemo" target="1.6" />
+      <module name="canal_hdfs" target="1.8" />
+      <module name="CanalSample" target="1.8" />
     </bytecodeTargetLevel>
   </component>
 </project>
