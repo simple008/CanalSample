@@ -1,8 +1,9 @@
 package com.bupt.liu;
 
-/**
+/*
  * Created by lpeiz on 2017/8/13.
  */
+
 import com.alibaba.otter.canal.client.CanalConnector;
 import com.alibaba.otter.canal.client.CanalConnectors;
 import com.alibaba.otter.canal.protocol.CanalEntry.*;
@@ -17,7 +18,7 @@ public class ClientSample {
     public static void main(String args[]) {
         // 创建链接
         CanalConnector connector = CanalConnectors.newSingleConnector(new InetSocketAddress("127.0.0.1",
-                11111), "example", "", "");
+                11111), "mem", "", "");
         int batchSize = 1000;
         int emptyCount = 0;
         try {
