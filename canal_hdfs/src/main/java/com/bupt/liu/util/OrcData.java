@@ -9,6 +9,7 @@ import java.util.Map;
 public class OrcData {
     private Map<String, String> datas;
     private String checkcode;
+    private String table;
 
     public OrcData() {
     }
@@ -19,6 +20,14 @@ public class OrcData {
 
     public void setDatas(Map<String, String> datas) {
         this.datas = datas;
+    }
+
+    public void setTable(String table){
+        this.table = table;
+    }
+
+    public String getTable(){
+        return this.table;
     }
 
     public void putData(String colname, String value) {
