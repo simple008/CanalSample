@@ -22,7 +22,7 @@ public class OrcWriteFile {
 
     public static void main(String[] args) throws IOException{
         CanalConnector connector = CanalConnectors.newSingleConnector(new InetSocketAddress("127.0.0.1", 11111), "example", "", "");
-
+        MultiWrite multiWrite = new MultiWrite();
         int batchSize = 1000; //一批次拿1000条数据
         int emptyCount = 0;
         try {
@@ -33,14 +33,14 @@ public class OrcWriteFile {
             while (emptyCount < totalEmtryCount) {
                 Message message = connector.getWithoutAck(batchSize); //获取指定数量的数据
                 long batchId = message.getId();
-                System.out.println("batchId a  : " + batchId);
-                System.out.println("message size :" + message.getEntries().size());
+//                System.out.println("batchId a  : " + batchId);
+//                System.out.println("message size :" + message.getEntries().size());
                 int size = message.getEntries().size();
 
                 int pr = 0;
                 if (batchId == -1 || size == 0) {
                     emptyCount++;
-                    System.out.println("empty count : " + emptyCount);
+//                    System.out.println("empty count : " + emptyCount);
                     try {
                         Thread.sleep(1000);
                     } catch (InterruptedException e) {
@@ -50,24 +50,30 @@ public class OrcWriteFile {
                     emptyCount = 0;
                     pr++;
                     printEntry(message.getEntries());
-                    for (CanalEntry.Entry entry : message.getEntries())
-                        System.out.println(entry.getHeader().getEventLength());
+                    System.out.println("results size:" + results.size());
+//                    for (CanalEntry.Entry entry : message.getEntries())
+//                        System.out.println(entry.getHeader().getEventLength());
                     if(pr>1000) break;
                 }
 
-                if(results.size()>100){
-                    PackageIntoOrc.intoOrc(results);
-                    for(Data<OrcData> orcData : results){
+                if(results.size()>=10){
+                    System.out.println("要执行了");
+//                    PackageIntoOrc.intoOrc(results);
+                    multiWrite.pushData(results);
+                    System.out.println("执行了");
+                    /*for(Data<OrcData> orcData : results){
                         System.out.println(orcData.getData().getDatas());
                         for(Map.Entry entry :orcData.getData().getDatas().entrySet())
                             System.out.println(entry.getKey() + "***" + entry.getValue());
-                    }
+                    }*/
                     results.clear();
                 }
 
                 connector.ack(batchId);
             }
             System.out.println("empty too many times, exit ");
+        } catch (Exception e) {
+            e.printStackTrace();
         } finally {
             connector.disconnect();
         }
@@ -76,7 +82,8 @@ public class OrcWriteFile {
 
     private static void printEntry(@NotNull List<CanalEntry.Entry> entrys) {
         for (CanalEntry.Entry entry : entrys) {
-            if(!entry.getHeader().getTableName().equals("myaisstatic_mem"))
+            //过滤不需要的数据表
+            if(tableFilter(entry.getHeader().getTableName()))
                 continue;
             if (entry.getEntryType() == CanalEntry.EntryType.TRANSACTIONBEGIN ||
                     entry.getEntryType() == CanalEntry.EntryType.TRANSACTIONEND) {
@@ -148,6 +155,7 @@ public class OrcWriteFile {
                 OrcData od = new OrcData();
                 Map<String, String> merged = merge(src, cur);
                 od.setDatas(merged);
+                od.setTable(entry.getHeader().getTableName());
                 Data<OrcData> dod = new Data<OrcData>();
                 dod.setData(od);
                 results.add(dod);
@@ -164,7 +172,7 @@ public class OrcWriteFile {
             for(Map.Entry<CharSequence, CharSequence> entry : src.entrySet()){
                 err = entry;
                 String key = entry.getKey().toString().trim().toLowerCase();
-                if(filter(key))
+//                if(filter(key))
                     merged.put(key,entry.getValue() == null ? null:entry.getValue().toString());
             }
         }
@@ -172,7 +180,7 @@ public class OrcWriteFile {
             for(Map.Entry<CharSequence, CharSequence> entry : cur.entrySet()){
                 err = entry;
                 String key = entry.getKey().toString().trim().toLowerCase();
-                if(filter(key))
+//                if(filter(key))
                     merged.put(key, entry.getValue() == null ? null : entry.getValue().toString());
             }
         }
@@ -201,4 +209,15 @@ public class OrcWriteFile {
         }
         else return false;
     }
+    private static boolean tableFilter(String table){
+        Set<String> dict = new HashSet<String>();
+        dict.add("myaisbasestationreport_mem");
+        dict.add("myaisdynamic_fed");
+        dict.add("myaisstatic_fed");
+        if(dict.contains(table)){
+            return true;
+        }
+        else return false;
+    }
+
 }
